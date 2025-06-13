@@ -1,4 +1,4 @@
-FROM node:12.17.0-alpine
+FROM node:18-alpine
 
 WORKDIR /usr
 COPY package.json ./
@@ -9,7 +9,7 @@ RUN npm install
 RUN npm run build
 
 ## this is stage two , where the app actually runs
-FROM node:12.17.0-alpine
+FROM node:18-alpine
 
 WORKDIR /usr
 COPY package.json ./
