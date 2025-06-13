@@ -1,7 +1,8 @@
 import express from "express";
-import mongoose from "mongoose";
+import { database } from "./util/database";
 import * as callbackController from "./routes/callback";
 import { MONGODB_URI } from "./util/secrets";
+
 const app = express();
 
 app.use(express.json());
@@ -13,22 +14,33 @@ process.on("unhandledRejection", (ex) => {
   throw ex;
 });
 
-const mongoUrl: any = MONGODB_URI;
-mongoose
-  .connect(mongoUrl, {
-    useUnifiedTopology: true,
-    useNewUrlParser: true,
-    useCreateIndex: true,
-    useFindAndModify: false,
-  })
-  .then(() => {
-    console.log(`Connected to ${mongoUrl}...`);
-  })
-  .catch((err) => {
-    console.log(
-      `MongoDB connection error. Please make sure MongoDB is running. ${err}`
-    );
-  });
+// Connect to MongoDB
+async function startServer() {
+  try {
+    if (MONGODB_URI) {
+      await database.connect();
+    } else {
+      console.log("No MongoDB URI provided. Running without database connection.");
+    }
+  } catch (error) {
+    console.error("Failed to connect to MongoDB:", error);
+    process.exit(1);
+  }
 
-const port = process.env.PORT || 6969;
-app.listen(port, () => console.log(`Listening on port ${port}...`));
+  const port = process.env.PORT || 6969;
+  app.listen(port, () => console.log(`Listening on port ${port}...`));
+}
+
+process.on("SIGINT", async () => {
+  console.log("Shutting down gracefully...");
+  await database.disconnect();
+  process.exit(0);
+});
+
+process.on("SIGTERM", async () => {
+  console.log("Shutting down gracefully...");
+  await database.disconnect();
+  process.exit(0);
+});
+
+startServer().catch(console.error);
