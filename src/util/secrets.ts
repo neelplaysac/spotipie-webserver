@@ -1,8 +1,11 @@
 import dotenv from 'dotenv';
 import fs from "fs";
+import logger from "./logging";
 
 if (fs.existsSync(".env")) {
-    console.log("Using .env file to supply config environment variables");
+    logger.debug("Using .env file to supply config environment variables", {
+        context: "secrets_init",
+    });
     dotenv.config({ path: ".env" });
 }
 
@@ -12,13 +15,21 @@ export const MONGODB_URI = prod ? process.env["MONGODB_URI"] : process.env["MONG
 export const BOT_URL = process.env["BOT_URL"];
 
 if (!BOT_URL) {
-    console.log("No client secret. Set SESSION_SECRET environment variable.");
+    logger.warn("BOT_URL not set. Set BOT_URL environment variable.", {
+        context: "secrets_init",
+    });
 }
 
 if (!MONGODB_URI) {
     if (prod) {
-        console.log("No mongo connection string. Set MONGODB_URI environment variable.");
+        logger.warn("MongoDB URI not set. Set MONGODB_URI environment variable.", {
+            context: "secrets_init",
+            environment: "production",
+        });
     } else {
-        console.log("No mongo connection string. Set MONGODB_URI_LOCAL environment variable.");
+        logger.warn("MongoDB URI not set. Set MONGODB_URI_LOCAL environment variable.", {
+            context: "secrets_init",
+            environment: "development",
+        });
     }
 }

@@ -1,5 +1,6 @@
 import { MongoClient, Db, Collection } from "mongodb";
 import { MONGODB_URI } from "./secrets";
+import logger, { logError } from "./logging";
 
 class DatabaseConnection {
   private client: MongoClient | null = null;
@@ -7,25 +8,52 @@ class DatabaseConnection {
 
   async connect(): Promise<void> {
     if (!MONGODB_URI) {
-      throw new Error("MongoDB URI is not provided");
+      const error = new Error("MongoDB URI is not provided");
+      logger.error({
+        message: "MongoDB connection failed: URI not provided",
+        context: "database_connect",
+      });
+      throw error;
     }
     try {
+      logger.info("Attempting to connect to MongoDB", {
+        context: "database_connect",
+        database: "spotipie",
+      });
       this.client = new MongoClient(MONGODB_URI);
       await this.client.connect();
       this.db = this.client.db("spotipie");
-      console.log("Connected to MongoDB successfully (database: spotipie)");
+      logger.info("Connected to MongoDB successfully", {
+        context: "database_connect",
+        database: "spotipie",
+      });
     } catch (error) {
-      console.error("MongoDB connection error:", error);
+      logError(logger, error, {
+        context: "database_connect",
+        database: "spotipie",
+      });
       throw error;
     }
   }
 
   async disconnect(): Promise<void> {
     if (this.client) {
-      await this.client.close();
-      this.client = null;
-      this.db = null;
-      console.log("Disconnected from MongoDB");
+      try {
+        logger.info("Disconnecting from MongoDB", {
+          context: "database_disconnect",
+        });
+        await this.client.close();
+        this.client = null;
+        this.db = null;
+        logger.info("Disconnected from MongoDB successfully", {
+          context: "database_disconnect",
+        });
+      } catch (error) {
+        logError(logger, error, {
+          context: "database_disconnect",
+        });
+        throw error;
+      }
     }
   }
 
