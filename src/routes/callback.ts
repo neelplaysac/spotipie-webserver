@@ -3,7 +3,7 @@ import { authService } from "../models/auth";
 import { BOT_URL } from "../util/secrets";
 import logger from "../util/logging";
 
-const getClientIp = (req: Request) => req.ip;
+const getClientIp = (req: Request) => req.ip ?? "unknown";
 
 export const callbackRoute = async (req: Request, res: Response, next: NextFunction) => {
   const botUrl = BOT_URL;
