@@ -3,14 +3,15 @@ import { authService } from "../models/auth";
 import { BOT_URL } from "../util/secrets";
 import logger from "../util/logging";
 
+const getClientIp = (req: Request) => req.ip;
+
 export const callbackRoute = async (req: Request, res: Response, next: NextFunction) => {
   const botUrl = BOT_URL;
-  let url: string;
 
   logger.log({
     level: "info",
     message: "Callback route accessed",
-    data: { query: req.query, ip: req.connection.remoteAddress },
+    data: { query: req.query, ip: getClientIp(req) },
   });
 
   try {
@@ -18,12 +19,12 @@ export const callbackRoute = async (req: Request, res: Response, next: NextFunct
       logger.log({
         level: "warn",
         message: "OAuth callback cancelled by user",
-        data: { error: req.query.error, ip: req.connection.remoteAddress },
+        data: { error: req.query.error, ip: getClientIp(req) },
       });
       return res.send("Cancelled");
     }
 
-    const userIp = req.connection.remoteAddress || "unknown";
+    const userIp = getClientIp(req);
     const authCode = req.query.code as string;
 
     logger.log({
@@ -32,7 +33,6 @@ export const callbackRoute = async (req: Request, res: Response, next: NextFunct
       data: { ip: userIp, hasCode: !!authCode },
     });
 
-    // Use the new findOneAndUpdate method which handles both create and update
     const code = await authService.findOneAndUpdate(userIp, authCode);
 
     if (!code) {
@@ -50,19 +50,19 @@ export const callbackRoute = async (req: Request, res: Response, next: NextFunct
       data: { ip: userIp, codeId: code._id },
     });
 
-    url = `${botUrl}${code._id}`;
+    const redirectUrl = `https://${botUrl}${code._id}`;
     logger.log({
       level: "info",
       message: "Redirecting user to bot",
-      data: { ip: userIp, redirectUrl: `https://${url}` },
+      data: { ip: userIp, redirectUrl },
     });
 
-    res.redirect(`https://${url}`);
+    res.redirect(redirectUrl);
   } catch (err: any) {
     logger.log({
       level: "error",
       message: "Error in callback route",
-      data: { error: err.message, stack: err.stack, ip: req.connection.remoteAddress },
+      data: { error: err.message, stack: err.stack, ip: getClientIp(req) },
     });
     res.status(500).json({ error: "Internal server error" });
   }
@@ -72,7 +72,7 @@ export const homeRoute = async (req: Request, res: Response, next: NextFunction)
   logger.log({
     level: "info",
     message: "Home route accessed",
-    data: { ip: req.connection.remoteAddress },
+    data: { ip: getClientIp(req) },
   });
 
   res.status(200).send("Welcome to spotipie authserver");
