@@ -4,7 +4,7 @@ import * as callbackController from "./routes/callback";
 import { MONGODB_URI } from "./util/secrets";
 
 const app = express();
-
+app.set("trust proxy", true);
 app.use(express.json());
 
 app.get("/", callbackController.homeRoute);
